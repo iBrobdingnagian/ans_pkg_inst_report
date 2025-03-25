@@ -1,0 +1,82 @@
+---
+# Playbook to gather and export installed packages to CSV files
+- name: Gather and Export Installed Packages to CSV
+  # Target all hosts in the inventory
+  hosts: all
+  # Disable gathering of general facts to speed up execution
+  gather_facts: no
+  # Tag for filtering or reporting
+  tags: package_export
+
+  # Uncomment the following lines to use become with a password
+  # become: yes
+  # become_method: sudo
+  # become_user: root
+  # become_password: "{{ become_password }}"
+
+ # vars_files:
+ #   - vars/vars.yml
+
+  tasks:
+    # Task to gather package facts using the package manager
+    - name: Gather Package Facts
+      package_facts:
+        manager: auto
+      # Tag for filtering or reporting
+      tags: package_facts
+
+    # Task to create the CSV content based on gathered package facts
+    - name: Create CSV Content
+      set_fact:
+        csv_content: |
+          Hostname,Package Name,Version,Architecture,Release
+          {% for package, versions in ansible_facts.packages.items() %}
+          {% for version in versions %}
+          {{ inventory_hostname }},{{ package }},{{ version.version }},{{ version.arch }},{{ version.release }}
+          {% endfor %}
+          {% endfor %}
+      # Tag for filtering or reporting
+      tags: csv_content
+
+    # Local task to create the report directory structure
+    - name: Create Report Directory Structure
+      local_action:
+        module: file
+        path: "report/{{ lookup('pipe', 'date +%Y.%m.%d') }}"
+        state: directory
+        mode: '0755'
+      run_once: true
+      # Tag for filtering or reporting
+      tags: create_directory
+
+    # Local task to export the CSV content to a file in the report directory
+    - name: Export Packages to CSV
+      local_action:
+        module: copy
+        content: "{{ csv_content }}"
+        dest: "report/{{ lookup('pipe', 'date +%Y.%m.%d') }}/packages_{{ inventory_hostname }}.csv"
+      # Tag for filtering or reporting
+      tags: export_csv
+
+    # Local task to combine all CSV files into a single file
+    - name: Combine CSV Files
+      local_action:
+        module: shell
+        cmd: awk 'FNR==1 && NR!=1{next;}{print}' "report/{{ lookup('pipe', 'date +%Y.%m.%d') }}"/*.csv > "report/{{ lookup('pipe', 'date +%Y.%m.%d') }}/combined_packages.csv"
+      run_once: true
+      # Tag for filtering or reporting
+      tags: combine_csv
+
+# Instructions to create an Ansible Vault file:
+# 1. Create a directory named 'vars' if it doesn't exist.
+# 2. Inside the 'vars' directory, create a file named 'vars.yml'.
+# 3. Add the following content to 'vars.yml':
+#    become_password: "your_become_password"
+# 4. To encrypt the 'vars.yml' file using Ansible Vault:
+#    ansible-vault create vars/vars.yml
+#    (Enter a vault password when prompted)
+# 5. To edit the encrypted file:
+#    ansible-vault edit vars/vars.yml
+# 6. To run the playbook with the encrypted file:
+#    ansible-playbook --ask-vault-pass playbook.yml
+
