@@ -67,6 +67,12 @@
       # Tag for filtering or reporting
       tags: combine_csv
 
+
+
+
+## ap -i inv packages_report.yml --ask-become-pass ## Just run it with become password.
+
+
 # Instructions to create an Ansible Vault file:
 # 1. Create a directory named 'vars' if it doesn't exist.
 # 2. Inside the 'vars' directory, create a file named 'vars.yml'.
