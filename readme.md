@@ -22,6 +22,4 @@ Simplifies package management and auditing.
 
 Provides structured data for analysis.
 
-Enhances security with Ansible Vault integration.
-
 This playbook is designed to be flexible and scalable, making it suitable for environments requiring regular package audits.
